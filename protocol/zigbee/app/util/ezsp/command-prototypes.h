@@ -1973,8 +1973,8 @@ void sl_zigbee_ezsp_mac_passthrough_message_handler(
 // A callback invoked by the EmberZNet stack when a raw MAC message that has
 // matched one of the application's configured MAC filters.
 void sl_zigbee_ezsp_mac_filter_match_message_handler(
-  // The index of the filter that was matched.
-  uint8_t filterIndexMatch,
+  // The value of the filter that was matched.
+  sl_zigbee_mac_filter_match_data_t filterValueMatch,
   // The type of MAC passthrough message received.
   sl_zigbee_mac_passthrough_type_t legacyPassthroughType,
   // Information about the incoming packet.
@@ -3153,7 +3153,7 @@ uint8_t sl_zigbee_ezsp_gp_sink_table_get_number_of_active_entries(void);
 
 // Gets the total number of tokens.
 // Return: Total number of tokens.
-uint8_t sl_zigbee_ezsp_get_token_count(void);
+uint32_t sl_zigbee_ezsp_get_token_count(void);
 
 // Gets the token information for a single token at provided index
 // Return: An sl_status_t value indicating success or the reason for failure.

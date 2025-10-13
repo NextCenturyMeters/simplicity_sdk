@@ -42,6 +42,8 @@
 #include "sl_rail_features.h"
 #include "socket/socket.h"
 #include "arpa/inet.h"
+#include "common/endian.h"
+#include "app_event_log.h"
 
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
 #include "sl_power_manager.h"
@@ -359,14 +361,7 @@ static void app_join(sl_wisun_phy_config_type_t phy_config_type);
 
 static void app_cli_task(void *argument)
 {
-  sl_status_t ret;
   (void)argument;
-
-  ret = sl_wisun_set_regulation_tx_thresholds(app_settings_wisun.regulation_warning_threshold,
-                                              app_settings_wisun.regulation_alert_threshold);
-  if (ret != SL_STATUS_OK) {
-    printf("[Failed: unable to set regulation TX thresholds: %lu]\r\n", ret);
-  }
 
   if (app_settings_app.autoconnect) {
     app_join((sl_wisun_phy_config_type_t)app_settings_wisun.phy_config_type);
@@ -412,6 +407,8 @@ void app_cli_init(void)
 
   app_task_id = osThreadNew(app_cli_task, NULL, &app_task_attribute);
   assert(app_task_id != 0);
+
+  app_event_log_init();
 }
 
 void app_about(void)
@@ -858,6 +855,9 @@ void sl_wisun_on_event(sl_wisun_evt_t *evt)
     case SL_WISUN_MSG_DIRECT_CONNECT_LINK_STATUS_IND_ID:
       app_handle_direct_connect_link_status_ind(evt);
       break;
+    case SL_WISUN_MSG_LOGGER_EVENT_IND_ID:
+      app_handle_event_logger_ind(evt);
+      break;
     default:
       printf("[Unknown event: %d]\r\n", evt->header.id);
   }
@@ -1015,7 +1015,11 @@ static void app_join(sl_wisun_phy_config_type_t phy_config_type)
     params.traffic.lowpan_mtu = app_settings_wisun.lowpan_mtu;
     params.traffic.ipv6_mru = app_settings_wisun.ipv6_mru;
     params.traffic.max_edfe_fragment_count = app_settings_wisun.max_edfe_fragment_count;
-
+    params.mac.min_be = app_settings_mac.min_be;
+    params.mac.max_be = app_settings_mac.max_be;
+    params.mac.backoff_period_us = app_settings_mac.backoff_period_us;
+    params.mac.max_cca_retries = app_settings_mac.max_cca_retries;
+    params.mac.max_frame_retries = app_settings_mac.max_frame_retries;
     ret = sl_wisun_set_connection_parameters(&params);
   }
 
@@ -1150,6 +1154,13 @@ static void app_join(sl_wisun_phy_config_type_t phy_config_type)
     goto cleanup;
   }
 
+  ret = sl_wisun_set_regulation_tx_thresholds(app_settings_wisun.regulation_warning_threshold,
+                                              app_settings_wisun.regulation_alert_threshold);
+  if (ret != SL_STATUS_OK) {
+    printf("[Failed: unable to set regulation TX thresholds: %lu]\r\n", ret);
+  }
+
+
   ret = sl_wisun_set_pti_state(app_settings_app.pti_state);
   if (ret != SL_STATUS_OK) {
     printf("[Failed to set PTI state]\r\n");
@@ -1163,6 +1174,14 @@ static void app_join(sl_wisun_phy_config_type_t phy_config_type)
     goto cleanup;
   }
 #endif
+
+  // As per RFC3748, "The Identity Response field MUST NOT be null terminated"
+  ret = sl_wisun_set_eap_identity(strlen(app_settings_wisun.eap_identity),
+                                  (const uint8_t *)app_settings_wisun.eap_identity);
+  if (ret != SL_STATUS_OK) {
+    printf("[Failed to set EAP identity]\r\n");
+    goto cleanup;
+  }
 
   ret = sl_wisun_join((const uint8_t *)app_settings_wisun.network_name, &phy_config);
   if (ret == SL_STATUS_OK) {
@@ -3003,7 +3022,97 @@ void app_set_phy_sensitivity(sl_cli_command_arg_t *arguments)
   app_wisun_cli_mutex_unlock();
 }
 
+void app_reset_duty_cycle(sl_cli_command_arg_t *arguments)
+{
+  sl_status_t status;
+  (void)arguments;
+
+  app_wisun_cli_mutex_lock();
+
+  status = sl_wisun_reset_regulation_duty_cycle();
+  if (status != SL_STATUS_OK) {
+    printf("[Failed: unable to reset the duty cycle counters: %lu]\r\n", status);
+    goto cleanup;
+  }
+  printf("[Duty cycle counters reset]\r\n");
+
+cleanup:
+
+  app_wisun_cli_mutex_unlock();
+}
+
+void app_set_event_log_filter(sl_cli_command_arg_t *arguments)
+{
+  sl_status_t ret;
+  char *address_str = NULL;
+  sl_wisun_mac_address_t address;
+  const app_enum_t *value_enum;
+  uint8_t *event_mask_ptr;
+  uint64_t event_mask = 0;
+  size_t event_mask_len;
+
+  app_wisun_cli_mutex_lock();
+
+  address_str = sl_cli_get_argument_string(arguments, 0);
+  event_mask_ptr = sl_cli_get_argument_hex(arguments, 1, &event_mask_len);
+  if (event_mask_len > 8) {
+    printf("[Failed: invalid event mask length: %u]\r\n", event_mask_len);
+    goto cleanup;
+  }
+  memcpy(((uint8_t*)&(event_mask)) + 8 - event_mask_len, event_mask_ptr, event_mask_len);
+  event_mask = read_be64((uint8_t *)&event_mask);
+
+  value_enum = app_util_get_enum_by_string(app_mac_enum, address_str);
+  if (value_enum) {
+    // Assume enumeration means a broadcast address
+    address = APP_BROADCAST_MAC;
+  } else {
+    // Attempt to convert the MAC address string
+    ret = app_util_get_mac_address(&address, address_str);
+    if (ret != SL_STATUS_OK) {
+      printf("[Failed: unable to parse the MAC address: %lu]\r\n", ret);
+      goto cleanup;
+    }
+  }
+
+  ret = sl_wisun_set_event_filter(&address, event_mask);
+  if (ret != SL_STATUS_OK) {
+    printf("[Failed: unable to set event log filter: %lu]\r\n", ret);
+    goto cleanup;
+  }
+
+  printf("[Event log filter set]\r\n");
+
+cleanup:
+
+  app_wisun_cli_mutex_unlock();
+}
+
+void app_event_log(sl_cli_command_arg_t *arguments)
+{
+  sl_status_t ret;
+  char *address_str = NULL;
+  sl_wisun_mac_address_t address;
+
+  app_wisun_cli_mutex_lock();
+
+  address_str = sl_cli_get_argument_string(arguments, 0);
+  // Attempt to convert the MAC address string
+  ret = app_util_get_mac_address(&address, address_str);
+  if (ret != SL_STATUS_OK) {
+    printf("[Failed: unable to parse the MAC address: %lu]\r\n", ret);
+    goto cleanup;
+  }
+
+  app_event_log_print(&address);
+
+cleanup:
+
+  app_wisun_cli_mutex_unlock();
+}
+
 #if defined (SL_CATALOG_WISUN_CLI_DMP_PRESENT)
+
 static sl_status_t app_ble_start_advertising()
 {
   sl_status_t status;
@@ -3255,4 +3364,5 @@ cleanup:
 
   app_wisun_cli_mutex_unlock();
 }
+
 #endif

@@ -292,16 +292,7 @@
 
 //////////////////////////////////////////////////////////////////////////////
 // MANUFACTURING DATA
-// Pull in the platform-specific manufacturing tokens
-#if defined(CORTEXM3)
-// Cortex-M3 handles MFG tokens separately via mfg-token.h.
-#elif defined(EZSP_HOST) || defined(ZIGBEE_STACK_ON_HOST)
-// No MFG tokens on hosts or Zigbeed.
-#elif defined(SL_ZIGBEE_TEST)
-  #include "hal/micro/unix/simulation/token-manufacturing.h"
-#else
-  #error no platform defined
-#endif
+// MFG tokens are now pulled in outside of token-stack.h
 
 //////////////////////////////////////////////////////////////////////////////
 // STACK DATA
@@ -348,7 +339,7 @@ typedef struct {
 typedef struct {
   uint16_t mode;
   uint8_t eui64[8];
-  uint8_t key[16];  // ignored if (mode & TRUST_CENTER_KEY_LIVES_IN_PSA)
+  uint8_t key[16];  // ignored if using Secure Key Storage
 } tokTypeStackTrustCenter;
 typedef struct {
   uint32_t activeChannels;

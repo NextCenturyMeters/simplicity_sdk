@@ -37,6 +37,7 @@
 #include "sl_wisun_connection_params_api.h"
 #include "sl_wisun_lfn_params_api.h"
 #include "socket/socket.h"
+#include "sl_wisun_regulation_api.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -475,14 +476,39 @@ sl_status_t sl_wisun_set_device_private_key_id(uint32_t key_id);
  * @param[in] regulation Regional regulation
  * @return SL_STATUS_OK if successful, an error code otherwise
  *
- * This function sets the regional regulation for use in the following
- * connections. The selected regional regulation will impact both the Wi-SUN
+ * This function applies the appropriate parameter set from
+ * @ref SL_WISUN_REGULATION_PARAMETER_SETS to be used for upcoming connections.
+ * The selected regional regulation will impact both the Wi-SUN
  * stack performance and its behavior. See regulation standards for details.
  * No regulation is set by default.
  *
  * Available in libraries: Full, FFN, LFN, BR (see @ref API_AVAILABILITY)
+ *
+ * @note This function uses a copy of the regulation parameter sets, modifying
+ *       a predefined set in sl_wisun_regulation_api.h will not affect the
+ *       regulation set used by this function.
+ *       To change the regulation parameters, use sl_wisun_set_regulation_parameters().
  *****************************************************************************/
 sl_status_t sl_wisun_set_regulation(sl_wisun_regulation_t regulation);
+
+/**************************************************************************//**
+ * Configure the regional regulation parameter set.
+ *
+ * @param[in] params Parameter set to use
+ * @return SL_STATUS_OK if successful, an error code otherwise
+ *
+ * Available in libraries: Full, FFN, LFN, BR (see @ref API_AVAILABILITY)
+ *****************************************************************************/
+sl_status_t sl_wisun_set_regulation_parameters(const sl_wisun_regulation_params_t *params);
+
+/**************************************************************************//**
+ * Reset all the the past hour transmissions counters.
+ *
+ * @return SL_STATUS_OK if successful, an error code otherwise
+ *
+ * Available in libraries: Full, FFN, LFN, BR (see @ref API_AVAILABILITY)
+ *****************************************************************************/
+sl_status_t sl_wisun_reset_regulation_duty_cycle(void);
 
 /**************************************************************************//**
  * Configure neighbor table size.
@@ -947,6 +973,48 @@ sl_status_t sl_wisun_set_preferred_pan(uint16_t pan_id);
  * Available in libraries: Full, FFN, LFN, BR (see @ref API_AVAILABILITY)
  *****************************************************************************/
 sl_status_t sl_wisun_config_concurrent_detection(bool enable_tx, uint8_t reserved);
+
+/**************************************************************************//**
+ * Set EAP identity for authentication.
+ *
+ * @param[in] identity_length Length of EAP identity in bytes
+ * @param[in] identity EAP identity to use
+ * @return SL_STATUS_OK if successful, an error code otherwise
+ *
+ * This function sets the identity used in the EAP Identity Response during
+ * EAP authentication. The function must be called before initiating a
+ * connection. No checks are performed on the identity, the caller is
+ * responsible for formatting it correctly. In particular, RFC3748 requires
+ * that the identity must not be NULL terminated. If not set, the identity
+ * defaults to "Anonymous".
+ *
+ * Available in libraries: Full, FFN, LFN (see @ref API_AVAILABILITY)
+ *****************************************************************************/
+sl_status_t sl_wisun_set_eap_identity(uint8_t identity_length,
+                                      const uint8_t *identity);
+
+/**************************************************************************//**
+ * Set Filter for network events.
+ *
+ * @param[in] address MAC address to filter events
+ *   - **unicast address**: set the filter for the given MAC address
+ *   - **sl_wisun_broadcast_mac**: set the filter for all MAC addresses
+ * @param[in] events Bitmask of accepted events.
+ * @return SL_STATUS_OK if successful, an error code otherwise
+ *
+ * This function configures a filter for network events based on the specified
+ * MAC address and a bitmask of `sl_wisun_event_type_t` that defines the filtered
+ * events. The events are delivered through Silicon Labs’ Event System API[1]. To
+ * receive them, user must call `sl_event_subscribe` with `SL_EVENT_CLASS_WISUN`.
+ * To disable a filter, set the events bitmask to 0.
+ * This function can be called at any time.
+ *
+ * [1]: https://docs.silabs.com/gecko-platform/5.2.1/platform-common/event-system
+ *
+ * Available in libraries: Full, FFN, LFN, BR (see @ref API_AVAILABILITY)
+ *****************************************************************************/
+sl_status_t sl_wisun_set_event_filter(const sl_wisun_mac_address_t *address,
+                                      uint64_t events);
 
 /** @} (end SL_WISUN_API) */
 

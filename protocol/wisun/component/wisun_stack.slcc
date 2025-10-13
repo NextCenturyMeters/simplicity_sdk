@@ -57,6 +57,7 @@ include:
       - path: "sli_wisun_timer_service.h"
       - path: "sl_wisun_connection_params_api.h"
       - path: "sl_wisun_lfn_params_api.h"
+      - path: "sl_wisun_regulation_api.h"
       - path: "sl_wisun_ip6string.h"
   - path: "inc/socket/"
     file_list:
@@ -64,6 +65,10 @@ include:
   - path: "inc/arpa/"
     file_list:
     - path: "inet.h"
+  - path: "src/"
+    file_list:
+    - path: "common/endian.h"
+    - path: "common/int24.h"
 
 documentation:
   docset: wisun

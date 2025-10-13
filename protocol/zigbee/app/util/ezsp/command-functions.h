@@ -4315,14 +4315,14 @@ uint8_t sl_zigbee_ezsp_gp_sink_table_get_number_of_active_entries(void)
 // Token Interface Frames
 //------------------------------------------------------------------------------
 
-uint8_t sl_zigbee_ezsp_get_token_count(void)
+uint32_t sl_zigbee_ezsp_get_token_count(void)
 {
-  uint8_t count;
+  uint32_t count;
   startCommand(SL_ZIGBEE_EZSP_GET_TOKEN_COUNT);
   sl_zigbee_ezsp_status_t sendStatus = sendCommand();
   sli_zigbee_ezsp_set_last_status(sendStatus);
   if (sendStatus == SL_ZIGBEE_EZSP_SUCCESS) {
-    count = fetchInt8u();
+    count = fetchInt32u();
     return count;
   }
   return 255;
@@ -4681,17 +4681,17 @@ static void callbackDispatch(void)
     }
 
     case SL_ZIGBEE_EZSP_MAC_FILTER_MATCH_MESSAGE_HANDLER: {
-      uint8_t filterIndexMatch;
+      sl_zigbee_mac_filter_match_data_t filterValueMatch;
       sl_zigbee_mac_passthrough_type_t legacyPassthroughType;
       sl_zigbee_rx_packet_info_t packetInfo;
       uint8_t messageLength;
       uint8_t *messageContents;
-      filterIndexMatch = fetchInt8u();
+      filterValueMatch = fetchInt16u();
       legacyPassthroughType = fetchInt8u();
       fetch_sl_zigbee_rx_packet_info_t(&packetInfo);
       messageLength = fetchInt8u();
       messageContents = (uint8_t *)fetchInt8uPointer(messageLength);
-      sl_zigbee_ezsp_mac_filter_match_message_handler(filterIndexMatch, legacyPassthroughType, &packetInfo, messageLength, messageContents);
+      sl_zigbee_ezsp_mac_filter_match_message_handler(filterValueMatch, legacyPassthroughType, &packetInfo, messageLength, messageContents);
       break;
     }
 

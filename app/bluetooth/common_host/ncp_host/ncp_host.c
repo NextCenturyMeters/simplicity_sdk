@@ -348,6 +348,12 @@ static int32_t ncp_host_get_boot_event(void)
   }
   // Read bytes one by one until a valid boot event header is received.
   while (buf_ncp_in.header != boot_event_header) {
+#if ACCEPT_DFU_BOOT
+    if (buf_ncp_in.header == 0x000004a0) {
+      break;                                    // DFU boot header - keep it as is, exit before further shifting
+    }
+#endif
+
     if (shift_counter > SL_BGAPI_MAX_PAYLOAD_SIZE) {
       // Abort reception if the target sends data continuously.
       return -1;
@@ -413,7 +419,7 @@ static void on_boot_timer_expire(app_timer_t *timer, void *data)
 #if defined(SECURITY) && SECURITY == 1
 static void ncp_sec_host_command_handler(buf_ncp_host_t *buf)
 {
-  uint8_t response[DEFAULT_HOST_BUFLEN];
+  uint8_t response[DEFAULT_HOST_BUFLEN] = { 0 };
   sl_bt_msg_t *command = NULL;
   sl_bt_msg_t *resp_cmd = NULL;
   int32_t ret;

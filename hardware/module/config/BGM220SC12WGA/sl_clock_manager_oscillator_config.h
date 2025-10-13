@@ -162,13 +162,9 @@
 // <cmuHFRCODPLLFreq_26M0Hz=> 26 MHz
 // <cmuHFRCODPLLFreq_32M0Hz=> 32 MHz
 // <cmuHFRCODPLLFreq_38M0Hz=> 38 MHz
-// <cmuHFRCODPLLFreq_48M0Hz=> 48 MHz
-// <cmuHFRCODPLLFreq_56M0Hz=> 56 MHz
-// <cmuHFRCODPLLFreq_64M0Hz=> 64 MHz
-// <cmuHFRCODPLLFreq_80M0Hz=> 80 MHz
-// <d> cmuHFRCODPLLFreq_80M0Hz
+// <d> cmuHFRCODPLLFreq_38M0Hz
 #ifndef SL_CLOCK_MANAGER_HFRCO_BAND
-#define SL_CLOCK_MANAGER_HFRCO_BAND    cmuHFRCODPLLFreq_80M0Hz
+#define SL_CLOCK_MANAGER_HFRCO_BAND    cmuHFRCODPLLFreq_38M0Hz
 #endif
 
 // <e> Use DPLL
@@ -177,25 +173,25 @@
 #define SL_CLOCK_MANAGER_HFRCO_DPLL_EN    0
 #endif
 
-// <o SL_CLOCK_MANAGER_DPLL_FREQ> Target Frequency in Hz <1000000-80000000>
+// <o SL_CLOCK_MANAGER_DPLL_FREQ> Target Frequency in Hz <1000000-38000000>
 // <i> DPLL target frequency
-// <d> 76800000
+// <d> 38000000
 #ifndef SL_CLOCK_MANAGER_DPLL_FREQ
-#define SL_CLOCK_MANAGER_DPLL_FREQ    76800000
+#define SL_CLOCK_MANAGER_DPLL_FREQ    38000000
 #endif
 
 // <o SL_CLOCK_MANAGER_DPLL_N> Numerator (N) <300-4095>
 // <i> Value of N for output frequency calculation fout = fref * (N+1) / (M+1)
-// <d> 3839
+// <d> 379
 #ifndef SL_CLOCK_MANAGER_DPLL_N
-#define SL_CLOCK_MANAGER_DPLL_N    3839
+#define SL_CLOCK_MANAGER_DPLL_N    379
 #endif
 
 // <o SL_CLOCK_MANAGER_DPLL_M> Denominator (M) <0-4095>
 // <i> Value of M for output frequency calculation fout = fref * (N+1) / (M+1)
-// <d> 1919
+// <d> 383
 #ifndef SL_CLOCK_MANAGER_DPLL_M
-#define SL_CLOCK_MANAGER_DPLL_M    1919
+#define SL_CLOCK_MANAGER_DPLL_M    383
 #endif
 
 // <o SL_CLOCK_MANAGER_DPLL_REFCLK> Reference Clock

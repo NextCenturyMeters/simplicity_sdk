@@ -107,6 +107,23 @@ static sl_status_t sli_token_manager_decode_klv_header(const uint8_t *obj_adr,
   }
 
   const sl_klv_header_t *klv_header_data = (const sl_klv_header_t *)obj_adr;
+  uint8_t obj_index = 0;
+  uint32_t magic_number_and_crc_in_klv_header = 0;
+  uint32_t length_and_key_in_klv_header = 0;
+
+  // read magic number and crc
+  magic_number_and_crc_in_klv_header = *((uint32_t *)(obj_adr) + obj_index);
+  obj_index++;
+  // read length and key
+  length_and_key_in_klv_header = *((uint32_t *)(obj_adr) + obj_index);
+
+  // Validate the KLV header
+  if ((magic_number_and_crc_in_klv_header == SLI_TOKEN_KLV_ERASE_STATE)
+      || (length_and_key_in_klv_header == SLI_TOKEN_KLV_ERASE_STATE)) {
+    // KLV chain doesn't have KLV objects yet
+    TOKENDBG(printf("KLV chain doesn't have KLV objects yet\n"));
+    return SL_STATUS_NOT_FOUND;
+  }
 
   if (klv_header_data->magic_number != SLI_TOKEN_KLV_MAGIC_NUMBER) {
     TOKENDBG(printf("Invalid magic_number\n"));
@@ -353,12 +370,15 @@ sl_status_t sli_read_klv_object(sl_klv_handle_t const *klv_handle,
 
   uint8_t *obj_adr = (uint8_t *)klv_start_address + sizeof(uint32_t);
   uint32_t security_offset = SLI_TOKEN_MANAGER_GET_SECURITY_OFFSET(klv_start_address);
+  sl_status_t status = SL_STATUS_OK;
 
   while ((uint32_t *)obj_adr < (uint32_t *)klv_end_address) {
     sl_klv_header_t klv_header_info;
 
-    if (sli_token_manager_decode_klv_header(obj_adr, &klv_header_info) != SL_STATUS_OK) {
-      return SL_STATUS_INVALID_PARAMETER;
+    status = sli_token_manager_decode_klv_header(obj_adr, &klv_header_info);
+
+    if (status != SL_STATUS_OK) {
+      return status;
     }
 
     if (klv_header_info.key == (klv_handle->key & 0xFFFFU)) {
@@ -375,7 +395,6 @@ sl_status_t sli_read_klv_object(sl_klv_handle_t const *klv_handle,
       if (klv_main_start == SLI_TOKEN_KLV_STATIC_SECURE_TOKEN_MAIN_START) {
         uint8_t nonce[SLI_CRYPTO_NONCE_SIZE] = { 0 };
         uint8_t tag[SLI_CRYPTO_TAG_SIZE];
-        sl_status_t status;
 
         // Allocate memory for decryption
         // TODO: Optimize memory allocation
@@ -513,8 +532,22 @@ sl_status_t sli_write_klv_object(sl_klv_handle_t const *klv_handle,
   uint32_t klv_main_start = *((uint32_t *)klv_start_address);
   if ((klv_main_start != SLI_TOKEN_KLV_STATIC_SECURE_TOKEN_MAIN_START)
       && (klv_main_start != SLI_TOKEN_KLV_STATIC_DEVICE_TOKEN_MAIN_START)) {
-    TOKENDBG(printf("Invalid KLV chain start\n"));
-    return SL_STATUS_NOT_INITIALIZED;
+    // KLV chain is not initialized, need to initialize it.
+    TOKENDBG(printf("KLV chain is not initialized, need to initialize it\n"));
+    if (klv_start_address == (uint32_t)SLI_TOKEN_STATIC_SECURE_TOKEN_BASE) {
+      // Initialize KLV chain for secure token
+      klv_main_start = SLI_TOKEN_KLV_STATIC_SECURE_TOKEN_MAIN_START;
+      // Write the initialized value to the secure token's KLV start address.
+      if (sli_token_manager_flash_write(klv_start_address, &klv_main_start, sizeof(klv_main_start)) != SL_STATUS_OK) {
+        TOKENDBG(printf("Failed to initialize KLV chain start\n"));
+        return SL_STATUS_INITIALIZATION;
+      }
+    } else {
+      // Initialize KLV chain for device token
+      klv_main_start = SLI_TOKEN_KLV_STATIC_DEVICE_TOKEN_MAIN_START;
+      // Copy the initialized value to the device token's KLV start address.
+      memcpy((void *)klv_start_address, &klv_main_start, sizeof(klv_main_start));
+    }
   }
 
   uint32_t *current_pointer =

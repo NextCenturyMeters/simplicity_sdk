@@ -3575,7 +3575,8 @@ sl_rail_status_t sl_rail_start_scheduled_rx(sl_rail_handle_t rail_handle,
  * If automatic PRS LNA bypass is enabled on chip that supports the feature
  * (\ref SL_RAIL_SUPPORTS_PRS_LNA_BYPASS), a level is generated on a PRS
  * channel when the received power exceed a threshold. It is turned off after
- * frame reception or after timeout if no frame has been detected.
+ * frame reception or after timeout if no frame has been detected and power is
+ * below the threshold.
  *
  * @warning Calling this function before \ref sl_rail_init() won't enable the
  *   the feature now. It will return \ref SL_RAIL_STATUS_NO_ERROR but the
@@ -4926,7 +4927,7 @@ void sl_rail_enable_pa_cal(sl_rail_handle_t rail_handle, bool enable);
 /** @} */ // end of group Calibration
 
 /******************************************************************************
- * RF Sense Structures
+ * RF Sense
  *****************************************************************************/
 /**
  * @addtogroup Rf_Sense RF Sense
@@ -5082,6 +5083,30 @@ sl_rail_status_t sl_rail_set_rf_sense_selective_ook_wakeup_payload(sl_rail_handl
  * callback. It is generally used after EM4 reboot but can be used any time.
  */
 bool sl_rail_is_rf_sensed(sl_rail_handle_t rail_handle);
+
+/**
+ * The RF Sense high-sensitivity threshold value used by the next
+ * \ref sl_rail_start_rf_sense() or \ref
+ * sl_rail_sl_rail_start_selective_ook_rf_sense() call, when not specifying
+ * a low-sensitivity \ref sl_rail_rf_sense_band_t.
+ * The units are platform-dependent and range from 0 (highest sensitivity)
+ * to 255 (lowest sensitivity). This should be less than \ref
+ * sl_rail_rf_sense_low_sensitivity_value.
+ * RAIL initializes this to a default setting.
+ */
+extern uint8_t sl_rail_rf_sense_high_sensitivity_value;
+
+/**
+ * The RF Sense low-sensitivity threshold value used by the next
+ * \ref sl_rail_start_rf_sense() or \ref
+ * sl_rail_sl_rail_start_selective_ook_rf_sense() call, when specifying
+ * a low-sensitivity \ref sl_rail_rf_sense_band_t.
+ * The units are platform-dependent and range from 0 (highest sensitivity)
+ * to 255 (lowest sensitivity). This should be greater than \ref
+ * sl_rail_rf_sense_high_sensitivity_value.
+ * RAIL initializes this to a default setting.
+ */
+extern uint8_t sl_rail_rf_sense_low_sensitivity_value;
 
 /** @} */ // end of group Rf_Sense
 

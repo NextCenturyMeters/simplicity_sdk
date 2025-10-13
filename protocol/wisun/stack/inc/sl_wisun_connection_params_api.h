@@ -35,9 +35,10 @@
 #include "sl_wisun_common.h"
 #include "sl_common.h"
 #include "sl_status.h"
+#include "sl_wisun_types.h"
 
 /// API version used to check compatibility (do not edit when using this header)
-#define SL_WISUN_PARAMS_API_VERSION  7
+#define SL_WISUN_PARAMS_API_VERSION  8
 
 /**************************************************************************//**
  * @addtogroup SL_WISUN_TYPES
@@ -329,6 +330,8 @@ typedef struct {
   sl_wisun_params_eapol_t direct_connect_eapol;
   /// Traffic parameter set
   sl_wisun_params_traffic_t traffic;
+  /// MAC parameter set
+  sl_wisun_mac_params_t mac;
 } SL_ATTRIBUTE_PACKED sl_wisun_connection_params_t;
 SL_PACK_END()
 
@@ -444,7 +447,14 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_TEST = {
     .lowpan_mtu = 1576,
     .ipv6_mru = 1504,
     .max_edfe_fragment_count = 5,
-  }
+  },
+  .mac = {
+    .backoff_period_us = 0, // calculate from PHY by default
+    .min_be = 3,
+    .max_be = 5,
+    .max_cca_retries = 8,
+    .max_frame_retries = 19,
+  },
 };
 
 /// Profile for certification testing
@@ -548,7 +558,14 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_CERTIF = {
     .lowpan_mtu = 1576,
     .ipv6_mru = 1504,
     .max_edfe_fragment_count = 5,
-  }
+  },
+  .mac = {
+    .backoff_period_us = 0, // calculate from PHY by default
+    .min_be = 3,
+    .max_be = 5,
+    .max_cca_retries = 8,
+    .max_frame_retries = 19,
+  },
 };
 
 /// Profile for a small network
@@ -590,10 +607,10 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_SMALL = {
     .ptk_lifetime_m = 0,
     .sec_prot_retry_timeout_s = 0,
     .initial_key_min_s = 0,
-    .initial_key_max_s = 30,
-    .initial_key_retry_min_s = 180,
+    .initial_key_max_s = 60,
+    .initial_key_retry_min_s = 60,
     .initial_key_retry_max_s = 0,
-    .initial_key_retry_max_limit_s = 420,
+    .initial_key_retry_max_limit_s = 180,
     .temp_min_timeout_s = 0,
     .gtk_request_imin_m = 0,
     .gtk_request_imax_m = 0,
@@ -652,6 +669,13 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_SMALL = {
     .lowpan_mtu = 1576,
     .ipv6_mru = 1504,
     .max_edfe_fragment_count = 5,
+  },
+  .mac = {
+    .backoff_period_us = 0, // calculate from PHY by default
+    .min_be = 3,
+    .max_be = 5,
+    .max_cca_retries = 8,
+    .max_frame_retries = 19,
   }
 };
 
@@ -694,7 +718,7 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_MEDIUM = {
     .ptk_lifetime_m = 0,
     .sec_prot_retry_timeout_s = 0,
     .initial_key_min_s = 0,
-    .initial_key_max_s = 30,
+    .initial_key_max_s = 180,
     .initial_key_retry_min_s = 180,
     .initial_key_retry_max_s = 0,
     .initial_key_retry_max_limit_s = 720,
@@ -756,6 +780,13 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_MEDIUM = {
     .lowpan_mtu = 1576,
     .ipv6_mru = 1504,
     .max_edfe_fragment_count = 5,
+  },
+  .mac = {
+    .backoff_period_us = 0, // calculate from PHY by default
+    .min_be = 3,
+    .max_be = 5,
+    .max_cca_retries = 8,
+    .max_frame_retries = 19,
   }
 };
 
@@ -798,7 +829,7 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_LARGE = {
     .ptk_lifetime_m = 0,
     .sec_prot_retry_timeout_s = 0,
     .initial_key_min_s = 0,
-    .initial_key_max_s = 30,
+    .initial_key_max_s = 300,
     .initial_key_retry_min_s = 300,
     .initial_key_retry_max_s = 0,
     .initial_key_retry_max_limit_s = 900,
@@ -860,6 +891,13 @@ static const sl_wisun_connection_params_t SL_WISUN_PARAMS_PROFILE_LARGE = {
     .lowpan_mtu = 1576,
     .ipv6_mru = 1504,
     .max_edfe_fragment_count = 5,
+  },
+  .mac = {
+    .backoff_period_us = 0, // calculate from PHY by default
+    .min_be = 3,
+    .max_be = 5,
+    .max_cca_retries = 8,
+    .max_frame_retries = 19,
   }
 };
 

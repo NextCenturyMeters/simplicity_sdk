@@ -63,6 +63,8 @@
 #define SL_WISUN_PMK_LEN 32
 /// Length of a GAK in bytes
 #define SL_WISUN_GAK_LEN  16
+/// Maximum size of EAP identity
+#define SL_WISUN_EAP_IDENTITY_SIZE 32
 
 /// Enumerations for device type
 typedef enum {
@@ -494,15 +496,31 @@ typedef struct {
   uint16_t mpl_not_tx_count;
 } sl_wisun_statistics_network_t;
 
-/** ARIB regulation statistics. */
+/// ARIB regulation statistics
 typedef struct {
-  uint32_t tx_duration_ms;  /**< Sum of transmission durations during the last
-                             * hour in milliseconds. */
+  /// Sum of transmission durations during the last hour in milliseconds
+  uint32_t tx_duration_ms;
 } sl_wisun_statistics_arib_regulation_t;
 
-/** Regional regulation statistics. */
+/// Regional regulation statistics
 typedef union {
-  sl_wisun_statistics_arib_regulation_t arib;  /**< ARIB statistics. */
+  /// ARIB statistics
+  sl_wisun_statistics_arib_regulation_t arib;
+  /// Regional regulation statistics
+  struct {
+    /// Sum of transmission durations during the last hour in milliseconds
+    uint32_t tx_duration_ms;
+    /// Sum of transmission durations per channel during the last hour in milliseconds
+    uint32_t tx_duration_per_channel_ms;
+    /// Duty cycle warning threshold in milliseconds
+    uint32_t duty_cycle_warning_threshold_ms;
+    /// Duty cycle warning threshold per channel in milliseconds
+    uint32_t duty_cycle_warning_threshold_per_channel_ms;
+    /// Duty cycle alert threshold in milliseconds
+    uint32_t duty_cycle_alert_threshold_ms;
+    /// Duty cycle alert threshold per channel in milliseconds
+    uint32_t duty_cycle_alert_threshold_per_channel_ms;
+  };
 } sl_wisun_statistics_regulation_t;
 
 /// Heap usage statistics
@@ -985,11 +1003,11 @@ typedef struct {
 typedef enum {
   /// No regulation
   SL_WISUN_REGULATION_NONE = 0,
-  /// ARIB, can only be used with JP regulatory domain
+  /// ARIB, should only be used with JP regulatory domain
   SL_WISUN_REGULATION_ARIB = 1,
-  /// WPC, can only be used with IN regulatory domain
+  /// WPC, should only be used with IN regulatory domain
   SL_WISUN_REGULATION_WPC = 2,
-  /// ETSI, can only be used with EU regulatory domain
+  /// ETSI, should only be used with EU regulatory domain
   SL_WISUN_REGULATION_ETSI = 3,
 } sl_wisun_regulation_t;
 
@@ -1166,6 +1184,131 @@ typedef enum {
   /// At least one route is updated in the routing table
   SL_WISUN_ROUTING_TABLE_UPDATE_ROUTE_CHANGED = 0,
 } sl_wisun_routing_table_update_event_t;
+
+/// MAC parameter set
+SL_PACK_START(1)
+typedef struct {
+  /// Length of one backoff period in microseconds. If 0, the length will be calculated based on the PHY.
+  /// The default value is 0.
+  uint16_t backoff_period_us;
+  /// Minimum value of CSMA-CA backoff exponent. The default value is 3.
+  uint8_t min_be;
+  /// Maximum value of CSMA-CA backoff exponent. The default value is 5.
+  uint8_t max_be;
+  /// Maximum number of CCA retries. The transmission is aborted if the channel is still busy
+  /// after 1 + max_cca_retries attempts. The default value is 8.
+  uint8_t max_cca_retries;
+  /// Maximum number of transmission retries. The transmission is aborted if no acknowledgment
+  /// has been received after 1 + max_frame_retries attempts. The default value is 19.
+  uint8_t max_frame_retries;
+  /// Reserved, set to zero
+  uint8_t reserved[2];
+} SL_ATTRIBUTE_PACKED sl_wisun_mac_params_t;
+SL_PACK_END()
+
+/// Enumeration for event types
+typedef enum {
+  SL_WISUN_LOGGER_EVENT_TYPE_NONE = 0,
+  /// Event published when a neighbor's lifetime changes
+  SL_WISUN_LOGGER_EVENT_TYPE_NEIGHBOR_LIFETIME_CHANGED = 1,
+  /// Event published when a frame is received
+  SL_WISUN_LOGGER_EVENT_TYPE_FRAME_RECEIVED = 2,
+  /// Event published when a frame is dropped due to frame counter failure
+  SL_WISUN_LOGGER_EVENT_TYPE_FRAME_COUNTER_FAILURE = 4,
+  /// Event published when a tx fails
+  SL_WISUN_LOGGER_EVENT_TYPE_TX_FAILURE = 8,
+} sl_wisun_logger_event_type_t;
+
+/// Enumeration for event log frame types
+typedef enum {
+  /// PAN Advertisement Solicit frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_PAS = 0,
+  /// PAN Advertisement frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_PA = 1,
+  /// LFN PAN Advertisement Solicit frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_LPAS = 2,
+  /// LFN PAN Advertisement frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_LPA = 3,
+  /// EAPOL frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_EAPOL = 4,
+  /// PAN Configuration Solicit frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_PCS = 5,
+  /// PAN Configuration frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_PC = 6,
+  /// LFN PAN Configuration Solicit frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_LPCS = 7,
+  /// LFN PAN Configuration frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_LPC = 8,
+  /// LFN Time Sync
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_LTS = 9,
+  /// Data frame
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_DATA = 10,
+  /// Undefined frame type
+  SL_WISUN_LOGGER_EVENT_FRAME_TYPE_UNDEF = 255,
+} sl_wisun_logger_event_frame_type_t;
+
+/// Neighbor lifetime change information
+SL_PACK_START(1)
+typedef struct {
+  /// Lifetime of the neighbor in seconds after update
+  uint32_t lifetime;
+} SL_ATTRIBUTE_PACKED sl_wisun_logger_event_neighbor_lifetime_changed_t;
+SL_PACK_END()
+
+/// Wisun Pan Advertisement information
+SL_PACK_START(1)
+typedef struct {
+  /// PAN ID
+  uint16_t pan_id;
+  /// Routing cost
+  uint16_t routing_cost;
+  /// PAN size
+  uint16_t pan_size;
+  /// Load factor
+  uint8_t load_factor;
+} SL_ATTRIBUTE_PACKED sl_wisun_logger_event_pa_data_t;
+SL_PACK_END()
+
+/// Frame received information
+SL_PACK_START(1)
+typedef struct {
+  /// Frame type
+  uint32_t type;
+  /// RSSI of the received frame
+  int8_t rssi;
+  /// Data of the received frame
+  union {
+    /// PAN Advertisement information
+    sl_wisun_logger_event_pa_data_t pa;
+  } data;
+} SL_ATTRIBUTE_PACKED sl_wisun_logger_event_frame_received_t;
+SL_PACK_END()
+
+/// TX failure information
+SL_PACK_START(1)
+typedef struct {
+  /// Frame type
+  uint32_t type;
+} SL_ATTRIBUTE_PACKED sl_wisun_logger_event_tx_failure_t;
+SL_PACK_END()
+
+/// Wisun Event information
+SL_PACK_START(1)
+typedef struct {
+  /// Event type
+  uint64_t type;
+  /// Address of the node
+  sl_wisun_mac_address_t address;
+  union {
+    /// Neighbor lifetime change information
+    sl_wisun_logger_event_neighbor_lifetime_changed_t neighbor_lifetime_changed;
+    /// Frame received information
+    sl_wisun_logger_event_frame_received_t frame_received;
+    /// TX failure information
+    sl_wisun_logger_event_tx_failure_t tx_failure;
+  } u;
+} SL_ATTRIBUTE_PACKED sl_wisun_logger_event_t;
+SL_PACK_END()
 
 /**************************************************************************//**
  * Handler called for an IPv6 packet from Wi-SUN network.

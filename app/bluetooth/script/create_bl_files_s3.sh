@@ -67,14 +67,14 @@ if [[ -n ${PATH_SCMD} ]]; then
 fi
 if [[ ! -f "${COMMANDER}" ]]; then
     echo "Error: Simplicity Commander not found. Please set the PATH_SCMD"
-    echo "environment variable according to AN1086 (sections 2.3 and 3.10)."
+    echo "environment variable according to AN1086 (sections 2.3 and 3.3.2)."
     read -rsp $'Press enter to continue...\n'
     exit
 fi
 
 # Locate build artifact
-PATH_PROJ="$(dirname $0)"
-PATH_HEX=`find ${PATH_PROJ} -type f \( -iname "*.${BUILD_AFTIFACT_FORMAT}" \) -exec echo {} \;`
+PATH_PROJ="$(dirname "$0")"
+PATH_HEX="$(find "${PATH_PROJ}" -type f -iname "*.${BUILD_AFTIFACT_FORMAT}" -exec echo "{}" \;)"
 if [[ -z ${PATH_HEX} ]]; then
     echo "Error: No *.${BUILD_AFTIFACT_FORMAT} build artifact found. Was the project built with success?"
     read -rsp $'Press enter to continue...\n'
@@ -83,13 +83,14 @@ fi
 echo "Build artifact: ${PATH_HEX}"
 
 # Set output paths
-PATH_OUTPUT="$(dirname ${PATH_HEX})"
+PATH_OUTPUT="$(dirname "${PATH_HEX}")"
 PATH_CONFIG="${PATH_OUTPUT}/gbl4_config.yaml"
 echo "Config: ${PATH_CONFIG}"
-PATH_GBL="${PATH_OUTPUT}/$(basename "${PATH_HEX}" .${BUILD_AFTIFACT_FORMAT}).gbl"
+PATH_GBL="${PATH_OUTPUT}/$(basename "${PATH_HEX}" ".${BUILD_AFTIFACT_FORMAT}").gbl"
 echo "Output: ${PATH_GBL}"
 
 # Create GBL config
-echo -e "updates:\n  - data: $(basename "${PATH_HEX}")" > ${PATH_CONFIG}
+echo "updates:" > "${PATH_CONFIG}"
+echo "  - data: $(basename "${PATH_HEX}")" >> "${PATH_CONFIG}"
 # Create GBL file
 "${COMMANDER}" gbl4 create "${PATH_GBL}" --config "${PATH_CONFIG}" --device sixg301
