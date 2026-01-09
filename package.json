@@ -1,0 +1,11 @@
+{
+  "name": "simplicity_sdk",
+  "version": "2025.6.2",
+  "description": "Simplicity SDK",
+  "keywords": [
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NextCenturyMeters/simplicity_sdk.git"
+  }
+}
